@@ -265,7 +265,6 @@
           .attr("x", -margin.top - height / 2 + 20)
           .text("Medical costs");
 
-        // Add a tooltip div. Its opacity is 0 by default
         tooltip = d3
           .select("#chart")
           .append("div")
@@ -280,7 +279,6 @@
         displayChart1();
       }
 
-      // A function that change this tooltip when the user hover a point.
       const mouseover = function (d) {
         tooltip.style("opacity", 1);
       };
@@ -290,11 +288,10 @@
           .html(
             "BMI: " + d.bmi + "<br> Charges: " + formatToCurrence(d.charges)
           )
-          .style("left", d3.mouse(this)[0] + 70 + "px")
-          .style("top", d3.mouse(this)[1] + 100 + "px");
+          .style("left", d3.mouse(this)[0] + 100 + "px")
+          .style("top", d3.mouse(this)[1] + 250 + "px");
       };
 
-      // A function that change this tooltip when the leaves a point: just need to set opacity to 0 again
       const mouseleave = function (d) {
         tooltip.transition().duration(200).style("opacity", 0);
       };
