@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Narrative Visualization Project</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <script src="https://d3js.org/d3.v5.js"></script>
+    <script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
+  </head>
+
+  <body>
+    <h1>Relationship between BMI (Body Mass Index) and insurance costs</h1>
+    <div class="chart1-wrapper">
+      <p>BMI, or Body Mass Index,  is a measure of body fat based on height and weight that applies to adult men and women. According to the CDC, "BMI appears to be as strongly correlated with various metabolic and disease outcome(s)." 
+        High BMI usually means more health risks and can result in higher medical costs billed by health insurance companies.
+        Our dataset confirms this: the scatter plot shows that BMI and insurance charges are positively correlated, where customers with higher BMI typically tend to pay more in insurance costs.
+      </p>
+      <p> You can hover your cursor over a data point to see information about that particular point.<br>
+        To move to the next page, please click the Next button.
+      </p>
+      <div class="button-wrapper">
+        <button type="button" onclick="goToScene('scene2')">Next</button>
+      </div> 
+    </div>
+
+    <div class="chart2-wrapper">
+      <p>Here you can see how tobacco use affects the relationship between BMI and insurance costs.</p>
+      <p> You can hover your cursor over a data point to see information about that particular point.<br>
+        To move to the next page or go back to the previous page, please use the navigation buttons.
+      </p>
+      <div class="button-wrapper">
+        <button type="button" class="left" onclick="goToScene('scene1')">Back</button>
+        <button type="button" class="right" onclick="goToScene('scene3')">Next</button>
+      </div>  
+    </div>
+    <div class="chart3-wrapper">
+      <p>In this visualization, you can use the dropdown below to explore how different factors (gender, region, tobacco use) can affect insurance costs.
+      To get details, you can hover your cursor over a data point on the plot.
+      </p>
+
+      <select id="breakdown" onchange="changeBreakdown()">
+        <option value="sex">Gender</option>
+        <option value="smoker">Tobacco Use</option>
+        <option value="region">Region</option>
+      </select>
+
+      <div class="button-wrapper">
+        <button type="button" class="left" onclick="goToScene('scene2')">Back</button>
+      </div>
+    </div>
+
+   
+
+    <div id="chart"></div>
+    <script>
+      const colorByGender = d3
+        .scaleOrdinal()
+        .domain(["female", "male"])
+        .range(["red", "blue"]);
+
+      const colorBySmoker = d3
+        .scaleOrdinal()
+        .domain(["yes", "no"])
+        .range(["red", "blue"]);
+
+      const colorByRegion = d3
+        .scaleOrdinal()
+        .domain(["southeast", "northeast"])
+        .range(["red", "blue"]);
+
+      
+      const filePath = "./insurance.csv";
+
+      // set the dimensions and margins of the chart
+      const margin = { top: 30, right: 30, bottom: 40, left: 70 },
+        width = 700 - margin.left - margin.right,
+        height = 700 - margin.top - margin.bottom;
+
+
+        const chart1_annotations = [
+        {
+          note: {
+            label: "It is defined as the body mass divided by the square of the body height, and is expressed in units of kg/m2. BMIs under 20 and over 25 have been associated with higher all-cause mortality.",
+            title: "BMI"
+          },
+          x: width + margin.right,
+          y: height + margin.top,
+          dy: -120,
+          dx: 0
+        }];
+
+        const chart2_annotations = [
+        {
+          note: {
+            label: "Red dots represent smokers. While nonsmokers tend to pay slightly more with increasing BMI, smokers pay MUCH more",
+            title: " "
+          },
+          x: 300,
+          y: 200,
+          dy: -40,
+          dx: -70
+        },
+        {
+          note: {
+            label: "Blue dots represent non-smokers. They are charged less than smokers.",
+            title: " "
+          },
+          x: width - 60,
+          y: height - 80,
+          dy: -80,
+          dx: 20
+        }];
+
+        
+    
+      const chart3_annotations = [
+        {
+          note: {
+            label: "Red dots: females",
+            title: " "
+          },
+          x: 315,
+          y: 190,
+          dy: -40,
+          dx: -70
+        },
+        {
+          note: {
+            label: "Blue dots: males",
+            title: " "
+          },
+          x: width - 120,
+          y: height - 120,
+          dy: -50,
+          dx: 100
+        }];  
+
+      const svg = d3
+        .select("#chart")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      let tooltip;
+
+      const makeAnnotations = d3.annotation().type(d3.annotationLabel);
+
+      const goToScene = (scene) => {
+        switch (scene) {
+          case "scene1":
+            document.querySelector(".chart1-wrapper").style.display = "block";
+            document.querySelector(".chart2-wrapper").style.display = "none";
+            document.querySelector(".chart3-wrapper").style.display = "none";
+            displayChart1();
+            break;
+          case "scene2":
+            document.querySelector(".chart1-wrapper").style.display = "none";
+            document.querySelector(".chart2-wrapper").style.display = "block";
+            document.querySelector(".chart3-wrapper").style.display = "none";
+            displayChart2();
+            break;
+          case "scene3":
+            document.querySelector(".chart1-wrapper").style.display = "none";
+            document.querySelector(".chart2-wrapper").style.display = "none";
+            document.querySelector(".chart3-wrapper").style.display = "block";
+            displayChart3();
+            break;
+        }
+      };
+
+      const formatToCurrence = (num) => {
+        num = parseFloat(num);
+        const val = num.toLocaleString("en-US", {
+          style: "currency",
+          currency: "USD",
+        });
+        return val;
+      };
+
+      const changeBreakdown = () => {
+        const breakdownType = document.getElementById("breakdown").value;
+
+        switch (breakdownType) {
+          case "sex":
+            chart3_annotations[0].note.label = "Red dots: females";
+            chart3_annotations[1].note.label = "Blue dots: males";
+            makeAnnotations.annotations(chart3_annotations);
+            svg.selectAll("circle").style("fill", function (d) {
+              return colorByGender(d.sex);
+            });
+            break;
+          case "smoker":
+            chart3_annotations[0].note.label = "Red dots: smokers";
+            chart3_annotations[1].note.label = "Blue dots: non-smokers";
+            makeAnnotations.annotations(chart3_annotations);
+            svg.selectAll("circle").style("fill", function (d) {
+              return colorBySmoker(d.smoker);
+            });
+            break;
+          case "region":
+            chart3_annotations[0].note.label = "Red dots: southeast";
+            chart3_annotations[1].note.label = "Blue dots: northeast";
+            makeAnnotations.annotations(chart3_annotations);
+            svg.selectAll("circle").style("fill", function (d) {
+              return colorByRegion(d.region);
+            });
+            break;
+        }
+      };
+
+
+      let data = [];
+      let x = d3.scaleLinear();
+      let y = d3.scaleLinear();
+
+      async function init() {
+        data = await d3.csv(filePath);
+
+        const minX = data.reduce((prev, curr) => {
+          return prev.bmi < curr.bmi ? prev : curr;
+        }).bmi;
+
+        const maxX = data.reduce((prev, curr) => {
+          return Number(prev.bmi) > Number(curr.bmi) ? prev : curr;
+        }).bmi;
+
+        const minY = data.reduce((prev, curr) => {
+          return Number(prev.charges) < Number(curr.charges) ? prev : curr;
+        }).charges;
+
+        const maxY = data.reduce((prev, curr) => {
+          return Number(prev.charges) > Number(curr.charges) ? prev : curr;
+        }).charges;
+
+        // Add X axis
+        const xDomain = [Number(minX), Number(maxX)];
+        x = x.domain(xDomain).range([0, width]);
+        svg
+          .append("g")
+          .attr("transform", "translate(0," + height + ")")
+          .call(d3.axisBottom(x));
+
+        // Add Y axis
+        const yDomain = [Number(minY), Number(maxY)];
+        y = y.domain(yDomain).range([height, 0]);
+        svg.append("g").call(d3.axisLeft(y));
+
+        // Add X axis label:
+        svg
+          .append("text")
+          .attr("text-anchor", "middle")
+          .attr("x", width / 2)
+          .attr("y", height + margin.top)
+          .text("Body mass index");
+
+        // Y axis label:
+        svg
+          .append("text")
+          .attr("text-anchor", "end")
+          .attr("transform", "rotate(-90)")
+          .attr("y", -margin.left + 20)
+          .attr("x", -margin.top - height / 2 + 20)
+          .text("Medical costs");
+
+        // Add a tooltip div. Its opacity is 0 by default
+        tooltip = d3
+          .select("#chart")
+          .append("div")
+          .style("opacity", 0)
+          .attr("class", "tooltip")
+          .style("background-color", "white")
+          .style("border", "solid")
+          .style("border-width", "1px")
+          .style("border-radius", "5px")
+          .style("padding", "10px");
+
+        displayChart1();
+      }
+
+      // A function that change this tooltip when the user hover a point.
+      const mouseover = function (d) {
+        tooltip.style("opacity", 1);
+      };
+
+      const mousemove = function (d) {
+        tooltip
+          .html(
+            "BMI: " + d.bmi + "<br> Charges: " + formatToCurrence(d.charges)
+          )
+          .style("left", d3.mouse(this)[0] + 70 + "px")
+          .style("top", d3.mouse(this)[1] + 100 + "px");
+      };
+
+      // A function that change this tooltip when the leaves a point: just need to set opacity to 0 again
+      const mouseleave = function (d) {
+        tooltip.transition().duration(200).style("opacity", 0);
+      };
+
+      const displayChart1 = () => {
+        // Add circles to svg
+        svg
+          .append("g")
+          .selectAll("dot")
+          .data(data)
+          .enter()
+          .append("circle")
+          .attr("cx", function (d) {
+            return x(d.bmi);
+          })
+          .attr("cy", function (d) {
+            return y(d.charges);
+          })
+          .attr("r", 7)
+          .style("fill", "green")
+          .style("stroke", "white")
+          .on("mouseover", mouseover)
+          .on("mousemove", mousemove)
+          .on("mouseleave", mouseleave);
+
+          makeAnnotations.annotations(chart1_annotations);
+      };
+
+
+
+      const displayChart2 = () => {
+        svg
+          .append("g")
+          .selectAll("dot")
+          .data(data)
+          .enter()
+          .append("circle")
+          .attr("cx", function (d) {
+            return x(d.bmi);
+          })
+          .attr("cy", function (d) {
+            return y(d.charges);
+          })
+          .attr("r", 7)
+          .style("fill", function (d) {
+            return colorBySmoker(d.smoker);
+          })
+          .style("stroke", "white")
+          .on("mouseover", mouseover)
+          .on("mousemove", mousemove)
+          .on("mouseleave", mouseleave);
+
+
+          makeAnnotations.annotations(chart2_annotations);
+      };
+
+      displayChart3 = () => {
+        svg
+          .append("g")
+          .selectAll("dot")
+          .data(data)
+          .enter()
+          .append("circle")
+          .attr("cx", function (d) {
+            return x(d.bmi);
+          })
+          .attr("cy", function (d) {
+            return y(d.charges);
+          })
+          .attr("r", 7)
+          .style("fill", function (d) {
+            return colorByGender(d.sex);
+          })
+          .style("stroke", "white")
+          .on("mouseover", mouseover)
+          .on("mousemove", mousemove)
+          .on("mouseleave", mouseleave);
+
+          document.getElementById("breakdown").value = "sex";
+          makeAnnotations.annotations(chart3_annotations);
+
+      };
+
+
+        d3.select("svg")
+          .append("g")
+          .attr("class", "annotation-group")
+          .call(makeAnnotations);
+
+
+      init();
+    </script>
+  </body>
+</html>

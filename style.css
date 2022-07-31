@@ -1,0 +1,48 @@
+.chart2-wrapper,
+.chart3-wrapper {
+  display: none;
+}
+
+.tooltip {
+    position: absolute;
+    z-index: 999;
+    display: block;
+    word-wrap: break-word;
+    opacity: 0;
+}
+
+.annotation-note-content {
+    font-size: 11px;
+}
+
+.button-wrapper {
+    /*margin: 0 auto;*/
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+button, select {
+    height: 30px;
+    background-color: white;
+    border: 1px solid black;
+    text-transform: uppercase;
+    margin: 10px 30px 10px 5px;
+    cursor: pointer;
+}
+
+button {
+    width: 100px;
+}
+
+select{
+    width: 150px;
+}
+
+.left {
+    float: left;
+}
+
+.right {
+    float: right;
+}
